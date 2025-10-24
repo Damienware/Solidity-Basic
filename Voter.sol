@@ -2,18 +2,32 @@
 pragma solidity ^0.8.0;
 
 contract Voter {
+
+    struct OptionPos {
+        uint pos;
+        bool exists;
+    }
+
     uint[] public votes;
     string[] public options;
     mapping (address => bool) hasVoted;
+    mapping (string => OptionPos) posOfOption;
+
     
     constructor(string[] memory _options) {
         options = _options;
         votes = new uint[](_options.length);
+
+        for (uint i = 0; i < options.length; i++) {
+            OptionPos memory option = OptionPos (i, true);
+            posOfOption[options[i]] = option;
+        }
     }
 
     function vote(uint option) public {
         require(option < options.length, "Invalid option");
         require(!hasVoted[msg.sender], "Already voted");
+
         recordVote(option);
     }
 
@@ -23,22 +37,12 @@ contract Voter {
     }
 
     function vote(string memory option) public {
-        require(!hasVoted[msg.sender], "Already voted");
+        require(!hasVoted[msg.sender], "Already  voted");
+        OptionPos memory optionPos = posOfOption [option];
+        require (optionPos.exists, "invalid option");
 
-        for (uint i = 0; i < options.length; i++) {
-            string memory currOption = options[i];
-            if (stringEqual(option, currOption)) {
-                 recordVote(i);
-                 return;
+        recordVote(optionPos.pos);
             }
-        }
-        
-        revert();
-    }
-
-    function stringEqual(string memory a, string memory b) private pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
-    }
 
     function getOptions() public view returns (string[] memory) {
         return options;
